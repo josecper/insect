@@ -52,7 +52,7 @@ class Ant:
         self.position = numpy.array((start_x, start_y))
         self.rotation = numpy.random.randint(0, 4)
 
-        def step(self):
+    def step(self):
 
         coords = tuple(self.position)
         
