@@ -9,9 +9,11 @@ delta = numpy.array(((0,1),
                      (0,-1),
                      (-1,0)))
 
-grid_shape = (100, 100)
+grid_shape = (240, 240)
 fps = 60
-scale = 4
+sps = 60
+scale = 2
+initial_iter = 2000000
 
 class Ant:
 
@@ -36,25 +38,34 @@ class Ant:
         self.grid[coords] = -self.grid[coords]
         self.position = (self.position + delta[self.rotation]) % self.grid.shape
 
-def go():
-    window = pyglet.window.Window(grid_shape[0]*scale, grid_shape[1]*scale)
+def go(ant):
+    window = pyglet.window.Window(ant.grid.shape[0]*scale, ant.grid.shape[1]*scale)
     pyglet.gl.glScalef(scale, scale, scale)
-    ant = Ant(grid_shape)
-    
-    pyglet.clock.schedule_interval(refresh, 1/fps, ant)
+
+    #doesn't work, pyglet limits scheduled functions to max fps
+    pyglet.clock.schedule_interval(step_ant, 1/sps, ant)
+    pyglet.clock.schedule_interval_soft(refresh, 1/fps, ant)
+    pyglet.clock.schedule_interval_soft(info, 5, ant)
     pyglet.app.run()    
     
 def refresh(dt, ant):
     grid8 = numpy.uint8(ant.grid)*255
-    im = pyglet.image.ImageData(*grid_shape, "L", bytes(grid8.data), -grid_shape[0])
+    im = pyglet.image.ImageData(*ant.grid.shape, "L", bytes(grid8.data), -ant.grid.shape[1])
     tex = im.get_texture()
     pyglet.gl.glBindTexture(pyglet.gl.GL_TEXTURE_2D, tex.id)
     pyglet.gl.glTexParameteri(tex.target, pyglet.gl.GL_TEXTURE_MAG_FILTER, pyglet.gl.GL_NEAREST)
-    #print(numpy.count_nonzero(ant.grid), ant.position, ant.rotation, delta[ant.rotation])
-    
     tex.blit(0,0,0)
+
+def step_ant(dt, ant):
     ant.step()
 
+def info(dt, ant):
+    print("dots: {0}, ant position: {1}, ant rotation: {2}".format(numpy.count_nonzero(ant.grid), ant.position, ant.rotation))
+    
 if __name__ == "__main__":
-    go()
+    ant = Ant(grid_shape)
+    for i in range(initial_iter):
+        ant.step()
+        
+    go(ant)
 
